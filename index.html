@@ -4,12 +4,12 @@
 <title>wallpapers</title>
 <style>
 :root{
-  --bg:#121a1b;       /* matches elifouts.net theme-color */
+  --bg:#121a1b;
   --surface:#18222 3;
   --fg:#d5dede;
   --dim:#7d8f90;
   --line:#243032;
-  --accent:#7fb5ad;   /* swap for your wal color */
+  --accent:#7fb5ad;
 }
 *{box-sizing:border-box}
 html{background:var(--bg)}
@@ -51,7 +51,7 @@ button:hover,button:focus-visible{color:var(--bg);background:var(--accent);borde
 <header><h1>wallpapers</h1><span>~/wal</span></header>
 <main id=m><p class=msg>loading…</p></main>
 <script>
-// works for any user.github.io/repo, every top level folder becomes a dropdown
+  
 const repo = location.hostname.endsWith('github.io') ? `${location.hostname.split('.')[0]}/${location.pathname.split('/')[1]}` : 'elifouts/wallpapers'
 const raw = `https://raw.githubusercontent.com/${repo}/main/`
 const m = document.getElementById('m')
@@ -63,7 +63,7 @@ fetch(`https://api.github.com/repos/${repo}/git/trees/main?recursive=1`).then(r 
       `<div><img loading=lazy src="${raw + p}" alt=""><button onclick="dl('${p}')">download</button></div>`).join('')}</div></details>`).join('')
     || '<p class=msg>no images found</p>'
 }).catch(() => m.innerHTML = '<p class=msg>failed to load (github api rate limit?)</p>')
-// download attr is ignored cross origin so go through a blob, still full quality
+
 async function dl(p) {
   const a = document.createElement('a')
   a.href = URL.createObjectURL(await (await fetch(raw + p)).blob())
