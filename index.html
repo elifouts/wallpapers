@@ -1,15 +1,16 @@
 <!doctype html><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name=theme-color content="#121a1b">
+<meta name=theme-color content="#282828">
 <title>wallpapers</title>
 <style>
 :root{
-  --bg:#121a1b;
-  --surface:#18222 3;
-  --fg:#d5dede;
-  --dim:#7d8f90;
-  --line:#243032;
-  --accent:#7fb5ad;
+  --bg:#282828;
+  --surface:#32302f;
+  --fg:#ebdbb2;
+  --dim:#928374;
+  --line:#3c3836;
+  --accent:#fabd2f;
+  --err:#fb4934;
 }
 *{box-sizing:border-box}
 html{background:var(--bg)}
@@ -21,53 +22,150 @@ body{
   counter-reset:sec;
 }
 ::selection{background:var(--accent);color:var(--bg)}
-header{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:8px}
+header{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:16px}
 h1{font:inherit;font-size:1.1em;font-weight:600;margin:0;color:var(--accent);letter-spacing:.02em}
 header span{color:var(--dim)}
-details{border-bottom:1px solid var(--line);counter-increment:sec}
+details{
+  border:1px solid var(--line);background:var(--bg);
+  margin-bottom:10px;counter-increment:sec;
+  transition:border-color .15s;
+}
+details:hover,details[open]{border-color:var(--accent)}
 summary{
-  cursor:pointer;list-style:none;padding:12px 0;
-  display:flex;align-items:baseline;gap:10px;
+  cursor:pointer;list-style:none;user-select:none;
+  padding:12px 16px;background:var(--surface);
+  display:flex;align-items:center;gap:14px;
   text-transform:lowercase;color:var(--fg);
+  transition:background .15s,color .15s;
 }
 summary::-webkit-details-marker{display:none}
 summary::before{content:counter(sec);color:var(--accent);font-weight:700;min-width:1.2em}
-summary i{font-style:normal;color:var(--dim);font-size:.9em}
-summary::after{content:"+";margin-left:auto;color:var(--dim)}
-details[open]>summary::after{content:"\2212"}
-summary:hover,summary:focus-visible{color:var(--accent);outline:none}
-.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:4px 0 16px}
+.t{display:flex;flex-direction:column;min-width:0;flex:1}
+.nm{display:flex;align-items:center;gap:10px}
+.nm i{
+  font-style:normal;font-size:.85em;color:var(--dim);
+  border:1px solid var(--line);padding:0 8px;border-radius:999px;
+}
+.t small{color:var(--dim);font-size:.8em;line-height:1.4}
+.car{
+  flex:none;width:160px;aspect-ratio:16/9;overflow:hidden;position:relative;
+  border:1px solid var(--line);background:var(--line);
+}
+.trk{display:flex;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.car img{flex:0 0 100%;width:100%;height:100%;aspect-ratio:auto;border:0}
+.dots{position:absolute;bottom:4px;left:0;right:0;display:flex;justify-content:center;gap:4px;pointer-events:none}
+.dots b{width:5px;height:5px;border-radius:50%;background:rgba(235,219,178,.45);transition:background .2s}
+.dots b.on{background:var(--accent)}
+summary::after{
+  content:"";flex:none;width:8px;height:8px;
+  border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);
+  transform:translateY(-2px) rotate(45deg);
+  transition:transform .2s;
+}
+details[open]>summary{border-bottom:1px solid var(--line);color:var(--accent)}
+details[open]>summary::after{transform:translateY(2px) rotate(-135deg)}
+details[open] .car{display:none}
+summary:hover{background:var(--line);color:var(--accent)}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:16px}
 .g div{border:1px solid var(--line);background:var(--surface);padding:6px;transition:border-color .15s}
 .g div:hover{border-color:var(--accent)}
-img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--line)}
+.g img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--line)}
 button{
   width:100%;margin-top:6px;padding:6px;font:inherit;font-size:.9em;
   background:transparent;color:var(--dim);border:1px solid var(--line);cursor:pointer;
   text-transform:lowercase;transition:color .15s,border-color .15s,background .15s;
 }
 button:hover,button:focus-visible{color:var(--bg);background:var(--accent);border-color:var(--accent);outline:none}
+button:disabled{cursor:wait;opacity:.6}
+button.err{color:var(--err);border-color:var(--err)}
 .msg{color:var(--dim);padding:16px 0}
+@media(max-width:560px){.car{width:104px}summary{gap:10px;padding:10px 12px}}
 </style>
 <header><h1>wallpapers</h1><span>~/wal</span></header>
 <main id=m><p class=msg>loading…</p></main>
 <script>
-  
 const repo = location.hostname.endsWith('github.io') ? `${location.hostname.split('.')[0]}/${location.pathname.split('/')[1]}` : 'elifouts/wallpapers'
 const raw = `https://raw.githubusercontent.com/${repo}/main/`
 const m = document.getElementById('m')
-fetch(`https://api.github.com/repos/${repo}/git/trees/main?recursive=1`).then(r => r.json()).then(({ tree }) => {
+const url = p => raw + p.split('/').map(encodeURIComponent).join('/')
+const esc = s => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
+const fmt = b => b >= 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b >= 1e6 ? (b / 1e6).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' KB'
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+
+fetch(`https://api.github.com/repos/${repo}/git/trees/main?recursive=1`).then(r => r.json()).then(({ tree, truncated }) => {
   const groups = {}
-  for (const { path } of tree) if (path.includes('/') && /\.(jpe?g|png|gif|webp)$/i.test(path)) (groups[path.split('/')[0]] ??= []).push(path)
-  m.innerHTML = Object.entries(groups).map(([name, files]) =>
-    `<details><summary>${name} <i>${files.length}</i></summary><div class=g>${files.map(p =>
-      `<div><img loading=lazy src="${raw + p}" alt=""><button onclick="dl('${p}')">download</button></div>`).join('')}</div></details>`).join('')
-    || '<p class=msg>no images found</p>'
+  for (const { path, size } of tree) if (path.includes('/') && /\.(jpe?g|png|gif|webp)$/i.test(path)) (groups[path.split('/')[0]] ??= []).push({ path, size: size || 0 })
+  m.innerHTML = Object.entries(groups).map(([name, files]) => {
+    const total = files.reduce((s, f) => s + f.size, 0)
+    const exts = [...new Set(files.map(f => f.path.split('.').pop().toLowerCase().replace('jpeg', 'jpg')))].join(', ')
+    const k = Math.min(4, files.length)
+    const slides = files.slice(0, k).map(f => f.path)
+    if (k > 1) slides.push(slides[0])
+    const car = `<div class=car data-k=${k}><div class=trk>${slides.map(p => `<img data-src="${esc(url(p))}" alt="">`).join('')}</div>${k > 1 ? `<div class=dots>${slides.slice(0, k).map((_, i) => `<b${i ? '' : ' class=on'}></b>`).join('')}</div>` : ''}</div>`
+    return `<details><summary><div class=t><span class=nm>${esc(name)} <i>${files.length}</i></span><small>${files.length} wallpaper${files.length === 1 ? '' : 's'} · ${fmt(total)} · ${esc(exts)}</small></div>${car}</summary><div class=g>${files.map(f =>
+      `<div><img loading=lazy src="${esc(url(f.path))}" alt=""><button data-p="${esc(f.path)}">download</button></div>`).join('')}</div></details>`
+  }).join('') || '<p class=msg>no images found</p>'
+  if (truncated) m.insertAdjacentHTML('beforeend', '<p class=msg>repo too large, list is incomplete</p>')
+  initCarousels()
 }).catch(() => m.innerHTML = '<p class=msg>failed to load (github api rate limit?)</p>')
 
-async function dl(p) {
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(await (await fetch(raw + p)).blob())
-  a.download = p.split('/').pop()
-  a.click()
+function initCarousels() {
+  const io = new IntersectionObserver(entries => {
+    for (const { target, isIntersecting } of entries) {
+      const s = target._s
+      if (isIntersecting) {
+        if (!s.loaded) { s.loaded = true; target.querySelectorAll('img').forEach(i => i.src = i.dataset.src) }
+        if (s.k > 1 && !still && !s.timer) s.timer = setInterval(s.step, s.delay)
+      } else if (s.timer) { clearInterval(s.timer); s.timer = 0 }
+    }
+  })
+  document.querySelectorAll('.car').forEach((c, n) => {
+    const k = +c.dataset.k, trk = c.firstElementChild, dots = [...c.querySelectorAll('.dots b')]
+    let idx = 0
+    const s = c._s = { k, loaded: false, timer: 0, delay: 3200 + n * 350 }
+    s.step = () => {
+      if (document.hidden) return
+      idx++
+      trk.style.transform = `translateX(-${idx * 100}%)`
+      dots.forEach((d, i) => d.classList.toggle('on', i === idx % k))
+    }
+    trk.addEventListener('transitionend', e => {
+      if (e.propertyName !== 'transform' || idx < k) return
+      trk.style.transition = 'none'
+      idx = 0
+      trk.style.transform = 'translateX(0)'
+      trk.offsetWidth
+      trk.style.transition = ''
+    })
+    io.observe(c)
+  })
 }
+
+m.addEventListener('click', async e => {
+  const b = e.target.closest('button[data-p]')
+  if (!b || b.disabled) return
+  const p = b.dataset.p, label = b.textContent
+  b.disabled = true
+  b.classList.remove('err')
+  b.textContent = 'downloading…'
+  try {
+    const res = await fetch(url(p), { cache: 'no-cache' })
+    if (!res.ok) throw new Error(res.status)
+    const blob = await res.blob()
+    if (!blob.size || (blob.type.startsWith('text/') && blob.size < 1024)) throw new Error('bad file')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = p.split('/').pop()
+    document.body.append(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000)
+    b.textContent = label
+  } catch {
+    b.classList.add('err')
+    b.textContent = 'failed, retry'
+  }
+  b.disabled = false
+})
 </script>
