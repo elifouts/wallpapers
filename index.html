@@ -1,24 +1,68 @@
-<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
-<title>Wallpapers</title>
+<!doctype html><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name=theme-color content="#121a1b">
+<title>wallpapers</title>
 <style>
-body{font:15px system-ui;background:#111;color:#ddd;max-width:1100px;margin:auto;padding:16px}
-summary{cursor:pointer;font-size:1.2em;padding:10px 0;text-transform:capitalize}
-.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding-bottom:12px}
-img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;display:block;background:#222}
-button{width:100%;margin-top:4px;padding:6px;background:#222;color:#ddd;border:1px solid #333;border-radius:6px;cursor:pointer}
+:root{
+  --bg:#121a1b;       /* matches elifouts.net theme-color */
+  --surface:#18222 3;
+  --fg:#d5dede;
+  --dim:#7d8f90;
+  --line:#243032;
+  --accent:#7fb5ad;   /* swap for your wal color */
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  font:14px/1.6 "CodeNewRoman Nerd Font Propo","CodeNewRoman Nerd Font",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  background:var(--bg);color:var(--fg);
+  max-width:1100px;margin:0 auto;
+  padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px));
+  counter-reset:sec;
+}
+::selection{background:var(--accent);color:var(--bg)}
+header{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:8px}
+h1{font:inherit;font-size:1.1em;font-weight:600;margin:0;color:var(--accent);letter-spacing:.02em}
+header span{color:var(--dim)}
+details{border-bottom:1px solid var(--line);counter-increment:sec}
+summary{
+  cursor:pointer;list-style:none;padding:12px 0;
+  display:flex;align-items:baseline;gap:10px;
+  text-transform:lowercase;color:var(--fg);
+}
+summary::-webkit-details-marker{display:none}
+summary::before{content:counter(sec);color:var(--accent);font-weight:700;min-width:1.2em}
+summary i{font-style:normal;color:var(--dim);font-size:.9em}
+summary::after{content:"+";margin-left:auto;color:var(--dim)}
+details[open]>summary::after{content:"\2212"}
+summary:hover,summary:focus-visible{color:var(--accent);outline:none}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:4px 0 16px}
+.g div{border:1px solid var(--line);background:var(--surface);padding:6px;transition:border-color .15s}
+.g div:hover{border-color:var(--accent)}
+img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--line)}
+button{
+  width:100%;margin-top:6px;padding:6px;font:inherit;font-size:.9em;
+  background:transparent;color:var(--dim);border:1px solid var(--line);cursor:pointer;
+  text-transform:lowercase;transition:color .15s,border-color .15s,background .15s;
+}
+button:hover,button:focus-visible{color:var(--bg);background:var(--accent);border-color:var(--accent);outline:none}
+.msg{color:var(--dim);padding:16px 0}
 </style>
-<h1>Wallpapers</h1>
+<header><h1>wallpapers</h1><span>~/wal</span></header>
+<main id=m><p class=msg>loading…</p></main>
 <script>
 // works for any user.github.io/repo, every top level folder becomes a dropdown
 const repo = location.hostname.endsWith('github.io') ? `${location.hostname.split('.')[0]}/${location.pathname.split('/')[1]}` : 'elifouts/wallpapers'
 const raw = `https://raw.githubusercontent.com/${repo}/main/`
+const m = document.getElementById('m')
 fetch(`https://api.github.com/repos/${repo}/git/trees/main?recursive=1`).then(r => r.json()).then(({ tree }) => {
   const groups = {}
   for (const { path } of tree) if (path.includes('/') && /\.(jpe?g|png|gif|webp)$/i.test(path)) (groups[path.split('/')[0]] ??= []).push(path)
-  for (const [name, files] of Object.entries(groups)) document.body.insertAdjacentHTML('beforeend',
-    `<details><summary>${name} (${files.length})</summary><div class=g>${files.map(p =>
-      `<div><img loading=lazy src="${raw + p}"><button onclick="dl('${p}')">Download</button></div>`).join('')}</div></details>`)
-})
+  m.innerHTML = Object.entries(groups).map(([name, files]) =>
+    `<details><summary>${name} <i>${files.length}</i></summary><div class=g>${files.map(p =>
+      `<div><img loading=lazy src="${raw + p}" alt=""><button onclick="dl('${p}')">download</button></div>`).join('')}</div></details>`).join('')
+    || '<p class=msg>no images found</p>'
+}).catch(() => m.innerHTML = '<p class=msg>failed to load (github api rate limit?)</p>')
 // download attr is ignored cross origin so go through a blob, still full quality
 async function dl(p) {
   const a = document.createElement('a')
